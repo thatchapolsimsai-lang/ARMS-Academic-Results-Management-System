@@ -121,7 +121,7 @@
             background-color: #ffffcc;
         }
 
-        #modal-overlay, #loading-overlay, #prompt-modal-overlay {
+        #modal-overlay, #loading-overlay, #prompt-modal-overlay, #offering-modal-overlay, #assign-teacher-modal-overlay {
             display: none;
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -132,6 +132,8 @@
         }
         #loading-overlay { z-index: 9999; }
         #prompt-modal-overlay { z-index: 60; }
+        #offering-modal-overlay { z-index: 65; }
+        #assign-teacher-modal-overlay { z-index: 65; }
 
         .win31-dialog {
             background-color: #c0c0c0;
@@ -187,7 +189,7 @@
         }
         .dashboard-panels {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 16px;
             margin-bottom: 16px;
         }
@@ -284,7 +286,7 @@
     <!-- MAIN APP WINDOW -->
     <div class="win31-app-window" id="app-window">
         <div class="win31-titlebar">
-            <div class="win31-title-text">Secure Academic Assessment System v2.6</div>
+            <div class="win31-title-text">Secure Academic Assessment System v2.7</div>
             <div class="text-xs">Windows 3.1 Edition</div>
         </div>
 
@@ -323,7 +325,7 @@
                 <form id="form-signin" class="space-y-4 max-w-sm">
                     <div>
                         <label class="block mb-1"><u>U</u>sername or E-mail:</label>
-                        <input type="text" id="si-identifier" class="win31-input" required placeholder="e.g., teacher1 or teacher1@school.ac.th">
+                        <input type="text" id="si-identifier" class="win31-input" required placeholder="e.g., teacher1 or manager1@school.ac.th">
                     </div>
                     <div>
                         <label class="block mb-1"><u>P</u>assword:</label>
@@ -532,7 +534,6 @@
                     </div>
                 </div>
 
-                <!-- phpMyAdmin Navigation Tabs -->
                 <div class="pma-tabs">
                     <div class="pma-tab active" id="tab-btn-requests" onclick="switchDevTab('requests')">Registration Requests</div>
                     <div class="pma-tab" id="tab-btn-audit" onclick="switchDevTab('audit')">Audit Log</div>
@@ -592,10 +593,10 @@
                 </div>
             </div>
 
-            <!-- DASHBOARD: COURSE MANAGER -->
+            <!-- DASHBOARD: COURSE MANAGER (UPGRADED: STAGE 2 & 3) -->
             <div id="view-dashboard-manager" class="view-section">
                 <div class="dashboard-header">
-                    <h2 class="text-xl"><u>C</u>ourse Manager Dashboard</h2>
+                    <h2 class="text-xl"><u>C</u>ourse Manager Operations Console</h2>
                     <div class="flex gap-4 items-center">
                         <span id="mgr-user-label" class="font-bold">Logged in as: -</span>
                         <button class="win31-btn" onclick="performLogout()">Log Out</button>
@@ -604,13 +605,74 @@
 
                 <div class="dashboard-panels">
                     <div class="panel">
-                        <span class="panel-title">Assigned Management Scope</span>
-                        <p>Active Course Offerings: <span id="mgr-stat-offerings" class="font-bold">-</span></p>
-                        <p>Total Class Enrollments: <span id="mgr-stat-enrollments" class="font-bold">-</span></p>
+                        <span class="panel-title">Active Academic Scope</span>
+                        <p>Current Term: <span id="mgr-stat-active-term" class="font-bold text-blue-900">-</span></p>
+                        <p>Total Terms: <span id="mgr-stat-terms" class="font-bold">-</span></p>
+                    </div>
+                    <div class="panel">
+                        <span class="panel-title">Curriculum Scope</span>
+                        <p>Master Courses: <span id="mgr-stat-courses" class="font-bold">-</span></p>
+                        <p>Active Offerings: <span id="mgr-stat-offerings" class="font-bold">-</span></p>
+                    </div>
+                    <div class="panel">
+                        <span class="panel-title">Instructional Staff</span>
+                        <p>Active Teachers: <span id="mgr-stat-teachers" class="font-bold">-</span></p>
+                        <p>Total Enrollments: <span id="mgr-stat-enrollments" class="font-bold">-</span></p>
                     </div>
                 </div>
-                <h3 class="text-lg underline mb-2">Course & Grade Supervision</h3>
-                <p class="mb-4">All grade approvals and review requests are handled securely via Apps Script workflows.</p>
+
+                <!-- phpMyAdmin Navigation Tabs -->
+                <div class="pma-tabs">
+                    <div class="pma-tab active" id="tab-btn-mgr-offerings" onclick="switchMgrTab('offerings')">Course Offerings & Teaching Assignments</div>
+                    <div class="pma-tab" id="tab-btn-mgr-summary" onclick="switchMgrTab('summary')">Curriculum Master Overview</div>
+                </div>
+
+                <!-- Tab 1: Course Offerings & Teacher Assignment -->
+                <div id="mgr-tab-offerings">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+                        <div class="flex gap-2 items-center">
+                            <label class="text-sm font-bold">Filter Term:</label>
+                            <select id="mgr-filter-term" class="win31-input text-xs w-48" onchange="loadManagerOfferings()">
+                                <option value="">-- All Terms --</option>
+                            </select>
+                            <button class="win31-btn text-xs whitespace-nowrap" onclick="loadManagerOfferings()">Refresh</button>
+                        </div>
+                        <button class="win31-btn font-bold text-sm" onclick="openCreateOfferingModal()">+ Open New Course Offering...</button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="win31-table" id="mgr-offerings-table">
+                            <thead>
+                                <tr>
+                                    <th>Term</th>
+                                    <th>Course Code</th>
+                                    <th>Course Name</th>
+                                    <th>Credit</th>
+                                    <th>Room</th>
+                                    <th>Grade</th>
+                                    <th>Assigned Instructor</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="8" class="text-center p-3">Loading course offerings...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Master Curriculum Overview -->
+                <div id="mgr-tab-summary" class="hidden space-y-4">
+                    <div class="border-2 border-black p-4 bg-[#c0c0c0]">
+                        <h3 class="text-md underline font-bold mb-2">Curriculum Coordination Guideline</h3>
+                        <p class="text-sm leading-relaxed mb-2">
+                            • <b>Single Course Code Principle:</b> Do not create duplicate course codes for multiple classrooms. One course code (e.g. ว21101) represents the curriculum, while separate <b>Course Offerings</b> are created for each classroom (e.g. ม.1/1, ม.1/2).
+                        </p>
+                        <p class="text-sm leading-relaxed">
+                            • <b>Instructor Assignment:</b> Each offering can be assigned to a specific primary instructor. Teachers will only see the assessment items and students for the sections they are explicitly assigned to.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <!-- DASHBOARD: TEACHER -->
@@ -700,9 +762,70 @@
         </div>
     </div>
 
+    <!-- MODAL: CREATE COURSE OFFERING -->
+    <div id="offering-modal-overlay">
+        <div class="win31-dialog flex flex-col w-[460px]">
+            <div class="win31-titlebar">
+                <div class="win31-title-text">Open New Course Offering</div>
+            </div>
+            <form id="form-create-offering" class="p-4 bg-[#c0c0c0] space-y-3">
+                <div>
+                    <label class="block mb-1 text-sm font-bold">Academic Term:</label>
+                    <select id="modal-off-term" class="win31-input" required></select>
+                </div>
+                <div>
+                    <label class="block mb-1 text-sm font-bold">Course:</label>
+                    <select id="modal-off-course" class="win31-input" required></select>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block mb-1 text-sm font-bold">Class / Room:</label>
+                        <input type="text" id="modal-off-room" class="win31-input" placeholder="e.g. ม.1/1" required>
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-bold">Grade Level:</label>
+                        <input type="text" id="modal-off-grade" class="win31-input" placeholder="e.g. ม.1">
+                    </div>
+                </div>
+                <div>
+                    <label class="block mb-1 text-sm font-bold">Initial Instructor (Optional):</label>
+                    <select id="modal-off-teacher" class="win31-input">
+                        <option value="">-- Assign Later --</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-2 pt-3 border-t-2 border-black">
+                    <button type="submit" class="win31-btn font-bold">Create Offering</button>
+                    <button type="button" class="win31-btn" onclick="closeCreateOfferingModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ASSIGN / CHANGE TEACHER -->
+    <div id="assign-teacher-modal-overlay">
+        <div class="win31-dialog flex flex-col w-[420px]">
+            <div class="win31-titlebar">
+                <div class="win31-title-text">Assign Instructor</div>
+            </div>
+            <form id="form-assign-teacher" class="p-4 bg-[#c0c0c0] space-y-3">
+                <div>
+                    <label class="block mb-1 text-sm font-bold">Section / Offering:</label>
+                    <div id="modal-assign-info" class="p-2 border border-black bg-white font-bold text-sm">-</div>
+                </div>
+                <div>
+                    <label class="block mb-1 text-sm font-bold">Select Teacher:</label>
+                    <select id="modal-assign-teacher-select" class="win31-input" required></select>
+                </div>
+                <div class="flex justify-end gap-2 pt-3 border-t-2 border-black">
+                    <button type="submit" class="win31-btn font-bold">Save Assignment</button>
+                    <button type="button" class="win31-btn" onclick="closeAssignTeacherModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- SCRIPT CLIENT LOGIC -->
     <script type="module">
-        // ดึง URL อัตโนมัติจาก config.js (หากไม่มีจะใช้ค่าว่าง)
         let API_URL = (window.APP_CONFIG && typeof window.APP_CONFIG.getApiUrl === 'function') 
             ? window.APP_CONFIG.getApiUrl() 
             : "";
@@ -711,6 +834,10 @@
         let pendingTempToken = null;
         let rawAuditLogs = [];
         let promptCallback = null;
+
+        // Caches for Course Manager operations
+        let managerDropdownCache = { terms: [], courses: [], teachers: [] };
+        let activeAssignOfferingId = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             const urlInput = document.getElementById('cfg-api-url');
@@ -1291,17 +1418,206 @@
             renderDevAuditLogs(filtered);
         }
 
-        // --- COURSE MANAGER DASHBOARD ---
+        // --- COURSE MANAGER DASHBOARD (UPGRADED: STAGE 2 & 3) ---
+
+        window.switchMgrTab = function(tabName) {
+            document.querySelectorAll('#view-dashboard-manager .pma-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('mgr-tab-offerings').classList.add('hidden');
+            document.getElementById('mgr-tab-summary').classList.add('hidden');
+
+            if (tabName === 'offerings') {
+                document.getElementById('tab-btn-mgr-offerings').classList.add('active');
+                document.getElementById('mgr-tab-offerings').classList.remove('hidden');
+                loadManagerOfferings();
+            } else {
+                document.getElementById('tab-btn-mgr-summary').classList.add('active');
+                document.getElementById('mgr-tab-summary').classList.remove('hidden');
+            }
+        };
 
         async function loadManagerDashboard() {
             try {
                 const data = await apiCall('getManagerDashboard');
-                document.getElementById('mgr-stat-offerings').innerText = data.offeringsCount;
-                document.getElementById('mgr-stat-enrollments').innerText = data.enrollmentsCount;
+                document.getElementById('mgr-stat-active-term').innerText = data.activeTerm 
+                    ? `${data.activeTerm.semester}/${data.activeTerm.academic_year}` 
+                    : 'None';
+                document.getElementById('mgr-stat-terms').innerText = data.termsCount || 0;
+                document.getElementById('mgr-stat-courses').innerText = data.coursesCount || 0;
+                document.getElementById('mgr-stat-offerings').innerText = data.offeringsCount || 0;
+                document.getElementById('mgr-stat-teachers').innerText = data.teachersCount || 0;
+                document.getElementById('mgr-stat-enrollments').innerText = data.enrollmentsCount || 0;
+
+                await loadManagerDropdowns();
+                await loadManagerOfferings();
             } catch (err) {
                 showDialog('Load Error', err.message, true);
             }
         }
+
+        async function loadManagerDropdowns() {
+            try {
+                const res = await apiCall('getAcademicDropdowns');
+                managerDropdownCache = res;
+
+                // Populate Term filter dropdown
+                const filterTerm = document.getElementById('mgr-filter-term');
+                filterTerm.innerHTML = '<option value="">-- All Terms --</option>';
+                res.terms.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t.term_id;
+                    opt.innerText = `${t.semester}/${t.academic_year} (${t.status})`;
+                    if (String(t.status).toLowerCase() === 'active') opt.selected = true;
+                    filterTerm.appendChild(opt);
+                });
+
+                // Populate Create Offering Modal dropdowns
+                const offTerm = document.getElementById('modal-off-term');
+                offTerm.innerHTML = '';
+                res.terms.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t.term_id;
+                    opt.innerText = `Term ${t.semester}/${t.academic_year}`;
+                    offTerm.appendChild(opt);
+                });
+
+                const offCourse = document.getElementById('modal-off-course');
+                offCourse.innerHTML = '';
+                res.courses.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.course_id;
+                    opt.innerText = `${c.course_code} - ${c.course_name} (${c.credit} Credits)`;
+                    offCourse.appendChild(opt);
+                });
+
+                const offTeacher = document.getElementById('modal-off-teacher');
+                offTeacher.innerHTML = '<option value="">-- Assign Later --</option>';
+                res.teachers.forEach(tc => {
+                    const opt = document.createElement('option');
+                    opt.value = tc.userId;
+                    opt.innerText = `${tc.name} (${tc.email})`;
+                    offTeacher.appendChild(opt);
+                });
+
+            } catch (err) {
+                showDialog('Dropdown Load Error', err.message, true);
+            }
+        }
+
+        window.loadManagerOfferings = async function() {
+            const termId = document.getElementById('mgr-filter-term').value;
+            const tbody = document.querySelector('#mgr-offerings-table tbody');
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center p-3">Loading offerings...</td></tr>';
+
+            try {
+                const res = await apiCall('getCourseOfferingsList', { termId: termId });
+                tbody.innerHTML = '';
+
+                if (res.offerings && res.offerings.length > 0) {
+                    res.offerings.forEach(off => {
+                        const tr = document.createElement('tr');
+                        const teacherDisplay = off.assignedTeacherId 
+                            ? `<b>${off.assignedTeacherName}</b>` 
+                            : `<span class="text-gray-600 italic">(ยังไม่มอบหมาย)</span>`;
+
+                        tr.innerHTML = `
+                            <td>${off.termName}</td>
+                            <td><b>${off.courseCode}</b></td>
+                            <td>${off.courseName}</td>
+                            <td>${off.credit}</td>
+                            <td>${off.classRoom}</td>
+                            <td>${off.gradeLevel || '-'}</td>
+                            <td>${teacherDisplay}</td>
+                            <td>
+                                <button class="win31-btn win31-btn-sm whitespace-nowrap" onclick="openAssignTeacherModal('${off.offeringId}', '${off.courseCode} - ${off.courseName} (${off.classRoom})', '${off.assignedTeacherId}')">Assign Teacher</button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center p-3">No course offerings found for this selection.</td></tr>';
+                }
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center p-3 text-red-700">Error loading offerings data.</td></tr>';
+                showDialog('Error', err.message, true);
+            }
+        };
+
+        // Course Offering Modal Handlers
+        window.openCreateOfferingModal = function() {
+            document.getElementById('form-create-offering').reset();
+            document.getElementById('offering-modal-overlay').style.display = 'flex';
+        };
+
+        window.closeCreateOfferingModal = function() {
+            document.getElementById('offering-modal-overlay').style.display = 'none';
+        };
+
+        document.getElementById('form-create-offering').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const termId = document.getElementById('modal-off-term').value;
+            const courseId = document.getElementById('modal-off-course').value;
+            const classRoom = document.getElementById('modal-off-room').value.trim();
+            const gradeLevel = document.getElementById('modal-off-grade').value.trim();
+            const teacherUserId = document.getElementById('modal-off-teacher').value;
+
+            try {
+                const res = await apiCall('createCourseOffering', {
+                    termId,
+                    courseId,
+                    classRoom,
+                    gradeLevel,
+                    teacherUserId
+                });
+                closeCreateOfferingModal();
+                showDialog('Success', res.message);
+                loadManagerDashboard();
+            } catch (err) {
+                showDialog('Creation Error', err.message, true);
+            }
+        });
+
+        // Teacher Assignment Modal Handlers
+        window.openAssignTeacherModal = function(offeringId, courseInfo, currentTeacherId) {
+            activeAssignOfferingId = offeringId;
+            document.getElementById('modal-assign-info').innerText = courseInfo;
+
+            const select = document.getElementById('modal-assign-teacher-select');
+            select.innerHTML = '<option value="">-- Select Instructor --</option>';
+            managerDropdownCache.teachers.forEach(tc => {
+                const opt = document.createElement('option');
+                opt.value = tc.userId;
+                opt.innerText = `${tc.name} (${tc.email})`;
+                if (tc.userId === currentTeacherId) opt.selected = true;
+                select.appendChild(opt);
+            });
+
+            document.getElementById('assign-teacher-modal-overlay').style.display = 'flex';
+        };
+
+        window.closeAssignTeacherModal = function() {
+            document.getElementById('assign-teacher-modal-overlay').style.display = 'none';
+            activeAssignOfferingId = null;
+        };
+
+        document.getElementById('form-assign-teacher').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const teacherUserId = document.getElementById('modal-assign-teacher-select').value;
+            if (!teacherUserId) {
+                return showDialog('Validation', 'Please select an instructor.', true);
+            }
+
+            try {
+                const res = await apiCall('assignTeacherToOffering', {
+                    offeringId: activeAssignOfferingId,
+                    teacherUserId: teacherUserId
+                });
+                closeAssignTeacherModal();
+                showDialog('Assignment Saved', res.message);
+                loadManagerOfferings();
+            } catch (err) {
+                showDialog('Assignment Error', err.message, true);
+            }
+        });
 
         // --- TEACHER DASHBOARD ---
 
