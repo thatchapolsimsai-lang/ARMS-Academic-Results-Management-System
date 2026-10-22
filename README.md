@@ -1,1 +1,1 @@
-# arms-academic-results-management-system
+# ARMS-Academic-Results-Management-System
