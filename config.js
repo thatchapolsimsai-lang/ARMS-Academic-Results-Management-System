@@ -8,7 +8,7 @@ const APP_CONFIG = {
   // เมื่อ Developer มีการสร้าง New Deployment ใน Apps Script 
   // ให้อัปเดตลิงก์ใหม่ตรงนี้ที่เดียว แล้ว Commit ขึ้น GitHub
   // --------------------------------------------------------
-  API_URL: "https://script.google.com/macros/s/AKfycbzaDeyihP8iqAh_DLl2VQ8mTkTlnWtEDq52mRtv0CtoJm944jvXQwktLcDgAg_SFlM6rw/exec",
+  API_URL: "https://script.google.com/macros/s/AKfycbyKnVtzvqryE1MqryldyyM5HPdBfO4t24DSVI1bDRmDwMX1I1J5plEGUIWMrhqA2hDFvQ/exec",
 
   // ข้อมูลเวอร์ชันระบบ
   APP_NAME: "Academic Assessment System",
