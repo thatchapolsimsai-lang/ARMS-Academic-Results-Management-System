@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Assessment System - Windows 3.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            font-family: 'Times New Roman', Times, serif !important;
+            font-weight: normal !important;
+            font-style: normal !important;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background-color: #ffffff;
+            color: #000000;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            font-size: 16px;
+            position: relative;
+        }
+
+        /* STATUS BANNER */
+        #api-banner {
+            background-color: #ffcccc;
+            color: #000000;
+            text-align: center;
+            padding: 3px 8px;
+            border-bottom: 2px solid #000000;
+            z-index: 100;
+            position: relative;
+            font-weight: bold !important;
+        }
+        .api-ready {
+            background-color: #ccffcc !important;
+        }
+
+        .win31-app-window {
+            width: 100%;
+            height: calc(100% - 30px);
+            background-color: #c0c0c0;
+            border: 2px solid #000000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .win31-titlebar {
+            background-color: #000080;
+            color: #ffffff;
+            padding: 3px 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .win31-title-text {
+            letter-spacing: 0.5px;
+            text-decoration: underline;
+        }
+
+        .win31-content {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            position: relative;
+            background-color: #ffffff;
+        }
+
+        .win31-btn {
+            background-color: #c0c0c0;
+            color: #000000;
+            border: 2px solid #000000;
+            padding: 4px 16px;
+            cursor: pointer;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .win31-btn:active:not(:disabled) {
+            background-color: #808080;
+            color: #ffffff;
+        }
+
+        .win31-btn:focus {
+            outline: 2px dotted #000000;
+            outline-offset: -4px;
+        }
+
+        .win31-btn:disabled {
+            color: #808080;
+            border-color: #808080;
+            cursor: not-allowed;
+        }
+
+        .win31-btn-sm {
+            padding: 2px 8px !important;
+            font-size: 13px !important;
+        }
+
+        .win31-input {
+            border: 2px solid #000000;
+            background-color: #ffffff;
+            color: #000000;
+            padding: 4px;
+            width: 100%;
+            outline: none;
+            user-select: text;
+        }
+
+        .win31-input:focus {
+            background-color: #ffffcc;
+        }
+
+        #modal-overlay, #loading-overlay, #prompt-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.65);
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+        }
+        #loading-overlay { z-index: 9999; }
+        #prompt-modal-overlay { z-index: 60; }
+
+        .win31-dialog {
+            background-color: #c0c0c0;
+            border: 2px solid #000000;
+            min-width: 340px;
+            max-width: 90%;
+            box-shadow: 6px 6px 0px rgba(0,0,0,1);
+        }
+
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        .win31-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            border: 2px solid #000000;
+        }
+        .win31-table th, .win31-table td {
+            border: 1px solid #000000;
+            padding: 4px 8px;
+            text-align: left;
+        }
+        .win31-table th {
+            background-color: #c0c0c0;
+            text-decoration: underline;
+        }
+        .win31-table td.score-input-cell {
+            padding: 0;
+        }
+        .win31-table input.score-input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            padding: 4px 8px;
+            background: transparent;
+        }
+        .win31-table input.score-input:focus {
+            background-color: #ffffcc;
+            outline: none;
+        }
+        .win31-table input.score-invalid {
+            background-color: #ffcccc !important;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #000000;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+        }
+        .dashboard-panels {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .panel {
+            border: 2px solid #000000;
+            padding: 10px;
+            background-color: #c0c0c0;
+        }
+        .panel-title {
+            text-decoration: underline;
+            margin-bottom: 8px;
+            display: block;
+            font-weight: bold;
+        }
+        .badge-draft {
+            background-color: #ffffcc;
+            border: 1px solid #000;
+            padding: 1px 4px;
+            font-size: 12px;
+        }
+        .badge-submitted, .badge-active {
+            background-color: #ccffcc;
+            border: 1px solid #000;
+            padding: 1px 4px;
+            font-size: 12px;
+        }
+        .badge-pending {
+            background-color: #ffff99;
+            border: 1px solid #000;
+            padding: 1px 4px;
+            font-size: 12px;
+        }
+        .badge-rejected {
+            background-color: #ffcccc;
+            border: 1px solid #000;
+            padding: 1px 4px;
+            font-size: 12px;
+        }
+        .link-win31 {
+            color: #000080;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .link-win31:hover {
+            background-color: #ffffcc;
+        }
+
+        /* PHPMyAdmin Style Navigation Sub-tabs */
+        .pma-tabs {
+            display: flex;
+            gap: 2px;
+            border-bottom: 2px solid #000000;
+            margin-bottom: 12px;
+            background-color: #e0e0e0;
+            padding: 4px 4px 0 4px;
+        }
+        .pma-tab {
+            padding: 4px 12px;
+            border: 1px solid #000000;
+            border-bottom: none;
+            background-color: #c0c0c0;
+            cursor: pointer;
+        }
+        .pma-tab.active {
+            background-color: #ffffff;
+            font-weight: bold !important;
+            padding-bottom: 5px;
+            margin-bottom: -2px;
+            border-top: 2px solid #000080;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- API CONFIGURATION BANNER -->
+    <div id="api-banner" class="flex justify-between items-center px-4 py-1">
+        <span id="api-banner-text">⚡ Live Web App URL Configured</span>
+        <button class="win31-btn !py-0 !px-2 text-xs" onclick="testApiConnection()">Test API Connection</button>
+    </div>
+
+    <!-- LOADING OVERLAY -->
+    <div id="loading-overlay">
+        <div class="win31-dialog flex flex-col w-[280px]">
+            <div class="win31-titlebar">
+                <div class="win31-title-text">Please Wait</div>
+            </div>
+            <div class="p-4 flex gap-4 items-center bg-[#c0c0c0]">
+                <div class="text-2xl">⌛</div>
+                <div>Communicating with Apps Script Server...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP WINDOW -->
+    <div class="win31-app-window" id="app-window">
+        <div class="win31-titlebar">
+            <div class="win31-title-text">Secure Academic Assessment System v2.6</div>
+            <div class="text-xs">Windows 3.1 Edition</div>
+        </div>
+
+        <div class="win31-content" id="app-content">
+            
+            <!-- HOME VIEW -->
+            <div id="view-home" class="view-section active">
+                <h1 class="mb-4 text-xl"><u>W</u>elcome to Academic Portal</h1>
+                <p class="mb-6 max-w-xl">Centralized Academic Grade Entry and Management System connected directly to Google Sheets Backend.</p>
+                
+                <div class="border-2 border-black p-4 bg-[#c0c0c0] max-w-xl mb-6 space-y-3">
+                    <div>
+                        <p class="underline mb-1 font-bold">API Endpoint Configuration:</p>
+                        <div class="flex gap-2 items-center">
+                            <input type="text" id="cfg-api-url" class="win31-input text-xs" placeholder="Paste Google Apps Script Web App URL here..." value="https://script.google.com/macros/s/AKfycbwLe0wG7rA4tadpNXmrQ80CW7NXDTEpa6T_j0vrkNgFlA2TM9phA2yvBpU45ErSbw8K7Q/exec">
+                            <button class="win31-btn text-xs whitespace-nowrap" onclick="saveAndTestApiUrl()">Save & Ping</button>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="underline mb-1 font-bold">System Security Notice:</p>
+                        <p class="text-sm">Server-side authorization is active. New accounts require verification and developer review before system entry.</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-4">
+                    <button class="win31-btn" onclick="navTo('view-signin')"><u>S</u>ign In to System</button>
+                    <button class="win31-btn" onclick="navTo('view-signup')"><u>R</u>egister New Account</button>
+                    <button class="win31-btn" onclick="navTo('view-check-status')"><u>C</u>heck Application Status</button>
+                </div>
+            </div>
+
+            <!-- SIGN IN VIEW -->
+            <div id="view-signin" class="view-section">
+                <h2 class="mb-4 text-lg"><u>S</u>ecure Sign In</h2>
+                <form id="form-signin" class="space-y-4 max-w-sm">
+                    <div>
+                        <label class="block mb-1"><u>U</u>sername or E-mail:</label>
+                        <input type="text" id="si-identifier" class="win31-input" required placeholder="e.g., teacher1 or teacher1@school.ac.th">
+                    </div>
+                    <div>
+                        <label class="block mb-1"><u>P</u>assword:</label>
+                        <div class="relative flex items-center">
+                            <input type="password" id="si-password" class="win31-input pr-16" required>
+                            <button type="button" class="win31-btn text-xs !py-0.5 !px-2 absolute right-1" onclick="togglePasswordVisibility('si-password', this)">Show</button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center text-sm pt-2">
+                        <span class="link-win31" onclick="navTo('view-signup')">Register new account</span>
+                        <span class="link-win31" onclick="navTo('view-forgot-password')">Forgot password?</span>
+                    </div>
+                    <div class="pt-2">
+                        <span class="link-win31 text-xs" onclick="navTo('view-check-status')">Check pending application status &gt;</span>
+                    </div>
+                    <div class="pt-4 flex gap-2 border-t-2 border-black mt-4">
+                        <button type="submit" class="win31-btn mt-2" id="btn-si-submit">Sign In</button>
+                        <button type="button" class="win31-btn mt-2" onclick="navTo('view-home')">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- SIGN UP VIEW -->
+            <div id="view-signup" class="view-section">
+                <h2 class="mb-4 text-lg"><u>A</u>ccount Registration</h2>
+                <form id="form-signup" class="space-y-3 max-w-md">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block mb-1"><u>U</u>sername:</label>
+                            <input type="text" id="su-username" class="win31-input" required placeholder="john_doe">
+                        </div>
+                        <div>
+                            <label class="block mb-1"><u>D</u>isplay Name:</label>
+                            <input type="text" id="su-displayname" class="win31-input" required placeholder="John Doe">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block mb-1"><u>E</u>-mail Address:</label>
+                        <div class="flex gap-2">
+                            <input type="email" id="su-email" class="win31-input" required placeholder="john@school.ac.th">
+                            <button type="button" class="win31-btn text-xs whitespace-nowrap" id="btn-su-send-otp" onclick="requestSignUpOtp()">Request OTP</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block mb-1"><u>E</u>mail Verification Code (OTP):</label>
+                        <input type="text" id="su-otp" class="win31-input tracking-widest text-center" maxlength="6" placeholder="Enter 6-digit OTP">
+                    </div>
+                    <div>
+                        <label class="block mb-1"><u>R</u>equested Role:</label>
+                        <select id="su-role" class="win31-input">
+                            <option value="Teacher">Teacher (Instructor)</option>
+                            <option value="Course Manager">Course Manager</option>
+                            <option value="System Developer">System Developer</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block mb-1"><u>P</u>assword:</label>
+                            <input type="password" id="su-password" class="win31-input" required minlength="6">
+                        </div>
+                        <div>
+                            <label class="block mb-1"><u>C</u>onfirm Password:</label>
+                            <input type="password" id="su-confirm-password" class="win31-input" required minlength="6">
+                        </div>
+                    </div>
+                    <div class="border border-black p-2 bg-[#ffffcc] text-xs">
+                        * Note: All new registrations start in <b>PENDING</b> status and must be approved by the System Developer before login access is granted.
+                    </div>
+                    <div class="pt-4 flex gap-2 border-t-2 border-black mt-4">
+                        <button type="submit" class="win31-btn mt-2" id="btn-su-submit">Complete Registration</button>
+                        <button type="button" class="win31-btn mt-2" onclick="navTo('view-signin')">Back to Sign In</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- CHECK REGISTRATION STATUS VIEW -->
+            <div id="view-check-status" class="view-section">
+                <h2 class="mb-4 text-lg"><u>C</u>heck Registration Status</h2>
+                <div class="max-w-md space-y-4">
+                    <p class="text-sm">Enter your registered username or email to check your approval status:</p>
+                    <div class="flex gap-2">
+                        <input type="text" id="cs-identifier" class="win31-input" placeholder="Username or email...">
+                        <button type="button" class="win31-btn text-xs whitespace-nowrap" onclick="performStatusCheck()">Check Status</button>
+                    </div>
+
+                    <div id="cs-result-box" class="border-2 border-black p-4 bg-[#c0c0c0] hidden space-y-2 text-sm">
+                        <p><strong>Username:</strong> <span id="cs-res-username">-</span></p>
+                        <p><strong>Display Name:</strong> <span id="cs-res-name">-</span></p>
+                        <p><strong>Status:</strong> <span id="cs-res-badge" class="badge-pending">-</span></p>
+                        <p id="cs-res-reason-row" class="hidden text-red-700"><strong>Rejection Reason:</strong> <span id="cs-res-reason">-</span></p>
+                        <p><strong>Registered Date:</strong> <span id="cs-res-date">-</span></p>
+                    </div>
+
+                    <div class="pt-4 border-t-2 border-black">
+                        <button type="button" class="win31-btn" onclick="navTo('view-signin')">Return to Sign In</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SETUP GOOGLE AUTHENTICATOR (TOTP) VIEW -->
+            <div id="view-totp-setup" class="view-section">
+                <h2 class="mb-3 text-lg"><u>G</u>oogle Authenticator Setup</h2>
+                <p class="mb-4 max-w-lg text-sm">Two-Factor Authentication is required for your account. Scan the QR code using Google Authenticator or enter the manual secret key.</p>
+
+                <div class="border-2 border-black p-4 bg-[#c0c0c0] max-w-lg mb-4 space-y-3">
+                    <div class="flex flex-col sm:flex-row items-center gap-4">
+                        <div class="border-2 border-black bg-white p-2">
+                            <img id="totp-qr-image" src="" alt="TOTP QR Code" class="w-36 h-36">
+                        </div>
+                        <div class="space-y-2 flex-1">
+                            <p class="font-bold underline text-xs">Manual Entry Secret Key:</p>
+                            <div id="totp-secret-key" class="win31-input bg-yellow-100 font-mono text-center tracking-widest text-sm py-1 select-all">-</div>
+                            <p class="text-xs">Type: Time-Based (30s)<br>Algorithm: SHA-1 / 6 Digits</p>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="form-totp-setup" class="space-y-3 max-w-lg">
+                    <div>
+                        <label class="block mb-1 font-bold">Enter 6-Digit Authenticator Code to Verify:</label>
+                        <input type="text" id="totp-setup-code" class="win31-input tracking-widest text-center text-lg w-48" required maxlength="6" pattern="[0-9]{6}" placeholder="------">
+                    </div>
+                    <div class="pt-3 flex gap-2 border-t-2 border-black">
+                        <button type="submit" class="win31-btn" id="btn-totp-setup-submit">Enable TOTP & Continue</button>
+                        <button type="button" class="win31-btn" onclick="performLogout()">Cancel & Sign Out</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- SIGN IN 2FA OTP / TOTP VIEW -->
+            <div id="view-signin-otp" class="view-section">
+                <h2 class="mb-4 text-lg"><u>T</u>wo-Factor Authentication (2FA)</h2>
+                <p class="mb-4 max-w-sm" id="2fa-instructions">Credentials accepted. Enter the 6-digit access code from your Google Authenticator app.</p>
+                <form id="form-signin-otp" class="space-y-4 max-w-sm">
+                    <div>
+                        <label class="block mb-1"><u>A</u>ccess Code (6 Digits):</label>
+                        <input type="text" id="si-otp" class="win31-input tracking-widest text-center text-lg" required maxlength="6" pattern="[0-9]{6}" placeholder="------">
+                    </div>
+                    <div class="pt-4 flex gap-2 border-t-2 border-black mt-4">
+                        <button type="submit" class="win31-btn mt-2" id="btn-si-otp-submit">Authenticate</button>
+                        <button type="button" class="win31-btn mt-2" onclick="cancelSignIn()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- FORGOT PASSWORD VIEW -->
+            <div id="view-forgot-password" class="view-section">
+                <h2 class="mb-4 text-lg"><u>F</u>orgot Password</h2>
+                <p class="mb-4 max-w-sm">Enter your registered email address to receive a password reset OTP code.</p>
+                <form id="form-forgot-password" class="space-y-4 max-w-sm">
+                    <div>
+                        <label class="block mb-1"><u>E</u>-mail Address:</label>
+                        <input type="email" id="fp-email" class="win31-input" required placeholder="user@school.ac.th">
+                    </div>
+                    <div class="pt-4 flex gap-2 border-t-2 border-black mt-4">
+                        <button type="submit" class="win31-btn mt-2" id="btn-fp-submit">Send Reset Code</button>
+                        <button type="button" class="win31-btn mt-2" onclick="navTo('view-signin')">Back to Sign In</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- RESET PASSWORD VIEW -->
+            <div id="view-reset-password" class="view-section">
+                <h2 class="mb-4 text-lg"><u>R</u>eset Password</h2>
+                <form id="form-reset-password" class="space-y-3 max-w-sm">
+                    <div>
+                        <label class="block mb-1"><u>E</u>-mail Address:</label>
+                        <input type="email" id="rp-email" class="win31-input" required readonly>
+                    </div>
+                    <div>
+                        <label class="block mb-1"><u>R</u>eset OTP Code:</label>
+                        <input type="text" id="rp-otp" class="win31-input tracking-widest text-center" required maxlength="6" placeholder="6-digit OTP">
+                    </div>
+                    <div>
+                        <label class="block mb-1"><u>N</u>ew Password:</label>
+                        <input type="password" id="rp-new-password" class="win31-input" required minlength="6">
+                    </div>
+                    <div class="pt-4 flex gap-2 border-t-2 border-black mt-4">
+                        <button type="submit" class="win31-btn mt-2" id="btn-rp-submit">Reset Password</button>
+                        <button type="button" class="win31-btn mt-2" onclick="navTo('view-signin')">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- DASHBOARD: SYSTEM DEVELOPER -->
+            <div id="view-dashboard-dev" class="view-section">
+                <div class="dashboard-header">
+                    <h2 class="text-xl"><u>S</u>ystem Developer Console</h2>
+                    <div class="flex gap-4 items-center">
+                        <span id="dev-user-label" class="font-bold">Logged in as: -</span>
+                        <button class="win31-btn" onclick="performLogout()">Log Out</button>
+                    </div>
+                </div>
+                
+                <div class="dashboard-panels">
+                    <div class="panel">
+                        <span class="panel-title">System Metrics</span>
+                        <p>Total Registered Users: <span id="dev-stat-users" class="font-bold">-</span></p>
+                        <p>Pending Approvals: <span id="dev-stat-pending" class="font-bold text-blue-900">-</span></p>
+                        <p>Total Courses: <span id="dev-stat-courses" class="font-bold">-</span></p>
+                    </div>
+                    <div class="panel">
+                        <span class="panel-title">Server Integration</span>
+                        <p>Backend: Google Apps Script Web App</p>
+                        <p>Database: Google Sheets API</p>
+                    </div>
+                </div>
+
+                <!-- phpMyAdmin Navigation Tabs -->
+                <div class="pma-tabs">
+                    <div class="pma-tab active" id="tab-btn-requests" onclick="switchDevTab('requests')">Registration Requests</div>
+                    <div class="pma-tab" id="tab-btn-audit" onclick="switchDevTab('audit')">Audit Log</div>
+                </div>
+
+                <!-- Tab 1: Pending Registration Requests -->
+                <div id="dev-tab-requests">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-md underline font-bold">Pending Account Registrations</h3>
+                        <button class="win31-btn text-xs" onclick="loadDevPendingRequests()">Refresh Requests</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="win31-table" id="dev-requests-table">
+                            <thead>
+                                <tr>
+                                    <th>Registered Time</th>
+                                    <th>Username</th>
+                                    <th>Display Name</th>
+                                    <th>Email</th>
+                                    <th>Requested Role</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 2: System Audit Log -->
+                <div id="dev-tab-audit" class="hidden">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2">
+                        <h3 class="text-md underline font-bold">Global System Audit Log</h3>
+                        <div class="flex gap-2 items-center w-full sm:w-auto">
+                            <input type="text" id="dev-audit-search" class="win31-input text-xs" placeholder="Search logs..." oninput="filterDevAuditLogs()">
+                            <button class="win31-btn text-xs whitespace-nowrap" onclick="loadDevDashboard()">Refresh Audit Log</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="win31-table" id="dev-audit-table">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Actor ID</th>
+                                    <th>Role</th>
+                                    <th>Action</th>
+                                    <th>Details</th>
+                                    <th>Outcome</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DASHBOARD: COURSE MANAGER -->
+            <div id="view-dashboard-manager" class="view-section">
+                <div class="dashboard-header">
+                    <h2 class="text-xl"><u>C</u>ourse Manager Dashboard</h2>
+                    <div class="flex gap-4 items-center">
+                        <span id="mgr-user-label" class="font-bold">Logged in as: -</span>
+                        <button class="win31-btn" onclick="performLogout()">Log Out</button>
+                    </div>
+                </div>
+
+                <div class="dashboard-panels">
+                    <div class="panel">
+                        <span class="panel-title">Assigned Management Scope</span>
+                        <p>Active Course Offerings: <span id="mgr-stat-offerings" class="font-bold">-</span></p>
+                        <p>Total Class Enrollments: <span id="mgr-stat-enrollments" class="font-bold">-</span></p>
+                    </div>
+                </div>
+                <h3 class="text-lg underline mb-2">Course & Grade Supervision</h3>
+                <p class="mb-4">All grade approvals and review requests are handled securely via Apps Script workflows.</p>
+            </div>
+
+            <!-- DASHBOARD: TEACHER -->
+            <div id="view-dashboard-teacher" class="view-section">
+                <div class="dashboard-header">
+                    <h2 class="text-xl"><u>T</u>eacher Grade Entry Portal</h2>
+                    <div class="flex gap-4 items-center">
+                        <span id="tch-user-label" class="font-bold">Logged in as: -</span>
+                        <button class="win31-btn" onclick="performLogout()">Log Out</button>
+                    </div>
+                </div>
+
+                <div class="dashboard-panels">
+                    <div class="panel">
+                        <span class="panel-title">My Assessment Items</span>
+                        <select id="tch-assignment-select" class="win31-input mb-2" onchange="loadTeacherStudents()">
+                            <option value="">-- Select Assessment --</option>
+                        </select>
+                    </div>
+                    <div class="panel">
+                        <span class="panel-title">Class Metrics</span>
+                        <p class="text-sm">Enrolled: <span id="tch-stat-enrolled" class="font-bold">0</span> | Graded: <span id="tch-stat-graded" class="font-bold">0</span></p>
+                        <p class="text-sm">Class Avg: <span id="tch-stat-avg" class="font-bold">0.0</span> / <span id="tch-max-score" class="font-bold">0</span></p>
+                    </div>
+                    <div class="panel">
+                        <span class="panel-title">Actions</span>
+                        <div class="flex gap-2">
+                            <button class="win31-btn flex-1" onclick="submitScores('Draft')">Save Draft</button>
+                            <button class="win31-btn flex-1" onclick="submitScores('Submitted')">Submit Formal</button>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="text-lg underline mb-2">Student Score Sheet</h3>
+                <div id="tch-grading-area" class="overflow-x-auto">
+                    <table class="win31-table" id="tch-grading-table">
+                        <thead>
+                            <tr>
+                                <th>Student Code</th>
+                                <th>Student Name</th>
+                                <th>Score Value (Max: <span id="tch-max-score-header" class="font-bold">0</span>)</th>
+                                <th>Submission Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="4" class="text-center p-4">Select an assessment above to display students.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- SYSTEM MESSAGE DIALOG -->
+    <div id="modal-overlay">
+        <div class="win31-dialog flex flex-col">
+            <div class="win31-titlebar">
+                <div class="win31-title-text" id="dialog-title">System Message</div>
+            </div>
+            <div class="p-4 flex gap-4 items-start bg-[#c0c0c0]">
+                <div class="text-2xl mt-1 border-2 border-black w-8 h-8 flex items-center justify-center bg-white font-bold" id="dialog-icon">i</div>
+                <div class="flex-1">
+                    <p id="dialog-message" class="mb-6 mt-1 leading-tight whitespace-pre-wrap">Operation completed.</p>
+                    <div class="flex justify-center">
+                        <button class="win31-btn" onclick="closeDialog()" id="dialog-btn-ok">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROMPT/REJECT REASON DIALOG -->
+    <div id="prompt-modal-overlay">
+        <div class="win31-dialog flex flex-col w-[380px]">
+            <div class="win31-titlebar">
+                <div class="win31-title-text" id="prompt-dialog-title">Rejection Reason</div>
+            </div>
+            <div class="p-4 bg-[#c0c0c0] space-y-3">
+                <p id="prompt-dialog-message" class="text-sm">Please provide a reason for rejecting this registration:</p>
+                <textarea id="prompt-dialog-input" class="win31-input h-20 text-sm" placeholder="Reason for rejection..."></textarea>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button class="win31-btn" id="prompt-btn-confirm">Submit</button>
+                    <button class="win31-btn" onclick="closePromptDialog()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT CLIENT LOGIC -->
+    <script type="module">
+        let API_URL = "https://script.google.com/macros/s/AKfycbwLe0wG7rA4tadpNXmrQ80CW7NXDTEpa6T_j0vrkNgFlA2TM9phA2yvBpU45ErSbw8K7Q/exec";
+
+        let currentSessionUser = null;
+        let pendingTempToken = null;
+        let rawAuditLogs = [];
+        let promptCallback = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlInput = document.getElementById('cfg-api-url');
+            if (urlInput) {
+                urlInput.value = API_URL;
+                urlInput.addEventListener('input', (e) => {
+                    API_URL = e.target.value.trim();
+                    updateApiBanner();
+                });
+            }
+            updateApiBanner();
+
+            const savedSession = sessionStorage.getItem('sys_sessionToken');
+            const savedUser = sessionStorage.getItem('sys_user');
+            if (savedSession && savedUser) {
+                try {
+                    currentSessionUser = JSON.parse(savedUser);
+                    currentSessionUser.sessionToken = savedSession;
+                    handleRoleRouting(currentSessionUser);
+                } catch(e) {
+                    sessionStorage.clear();
+                }
+            }
+        });
+
+        function updateApiBanner() {
+            const banner = document.getElementById('api-banner');
+            const bannerText = document.getElementById('api-banner-text');
+            if (API_URL && API_URL.startsWith("https://script.google.com/")) {
+                bannerText.innerText = "⚡ Live Web App URL Configured";
+                banner.classList.add('api-ready');
+            } else {
+                bannerText.innerText = "⚠️ API URL Not Configured";
+                banner.classList.remove('api-ready');
+            }
+        }
+
+        window.saveAndTestApiUrl = function() {
+            const inputVal = document.getElementById('cfg-api-url').value.trim();
+            API_URL = inputVal;
+            updateApiBanner();
+            testApiConnection();
+        };
+
+        window.testApiConnection = async function() {
+            if (!API_URL) {
+                showDialog("API Test Failed", "โปรดระบุ Web App URL ของ Google Apps Script ในช่องตั้งค่าก่อนทดสอบ", true);
+                return;
+            }
+
+            const startTime = performance.now();
+            document.getElementById('loading-overlay').style.display = 'flex';
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'healthCheck', data: {} })
+                });
+
+                const endTime = performance.now();
+                const latency = Math.round(endTime - startTime);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP Error Status: ${response.status} ${response.statusText}`);
+                }
+
+                const rawText = await response.text();
+
+                if (rawText.trim().startsWith('<')) {
+                    throw new Error(
+                        `Apps Script ส่งกลับเป็นหน้า HTML แทนที่จะเป็น JSON:\n\n` +
+                        `สาเหตุหลัก: การตั้งค่า "Who has access" ใน Apps Script Deployment ยังไม่ได้ตั้งเป็น "Anyone"\n\n` +
+                        `วิธีแก้: ไปที่ Apps Script > Deploy > Manage deployments > แก้ไข > ตั้งค่า Who has access เป็น Anyone > เลือก New version > Deploy`
+                    );
+                }
+
+                let result;
+                try {
+                    result = JSON.parse(rawText);
+                } catch (parseErr) {
+                    throw new Error(`Response ไม่ใช่ JSON ที่ถูกต้อง:\n${rawText.substring(0, 150)}...`);
+                }
+
+                document.getElementById('loading-overlay').style.display = 'none';
+
+                if (result.status === 'success' && result.data && (result.data.action === 'healthCheck' || result.data.status === 'Online')) {
+                    const banner = document.getElementById('api-banner');
+                    const bannerText = document.getElementById('api-banner-text');
+                    const serviceName = result.data.service || 'Academic Assessment API';
+                    bannerText.innerText = `✓ Backend Online (${latency} ms) | Service: ${serviceName}`;
+                    banner.classList.add('api-ready');
+
+                    showDialog(
+                        "API Health Check Success",
+                        `เชื่อมต่อกับ Google Apps Script Web App สำเร็จ!\n\n` +
+                        `• Service: ${serviceName}\n` +
+                        `• Server Timestamp: ${result.data.timestamp}\n` +
+                        `• Roundtrip Latency: ${latency} ms`
+                    );
+                } else {
+                    throw new Error(`คำตอบจาก Server ไม่ถูกต้อง:\n${JSON.stringify(result)}`);
+                }
+
+            } catch (error) {
+                document.getElementById('loading-overlay').style.display = 'none';
+                const banner = document.getElementById('api-banner');
+                const bannerText = document.getElementById('api-banner-text');
+                banner.classList.remove('api-ready');
+                bannerText.innerText = "❌ API Health Check Failed";
+
+                showDialog("API Health Check Failed", `ไม่สามารถสื่อสารกับ Apps Script ได้:\n\n${error.message}`, true);
+            }
+        };
+
+        async function apiCall(action, payload = {}) {
+            if (!API_URL) {
+                throw new Error("โปรดใส่ Web App URL ของ Google Apps Script ในตัวแปร API_URL");
+            }
+
+            document.getElementById('loading-overlay').style.display = 'flex';
+            
+            try {
+                if (currentSessionUser && currentSessionUser.sessionToken) {
+                    payload.sessionToken = currentSessionUser.sessionToken;
+                }
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: action, data: payload })
+                });
+                
+                const rawText = await response.text();
+                document.getElementById('loading-overlay').style.display = 'none';
+
+                if (rawText.trim().startsWith('<')) {
+                    throw new Error("Server returned HTML content instead of JSON. Ensure 'Who has access' is set to 'Anyone' in Google Apps Script deployment settings.");
+                }
+
+                let result;
+                try {
+                    result = JSON.parse(rawText);
+                } catch (jsonErr) {
+                    throw new Error(`Server Response Error:\n${rawText.substring(0, 150)}`);
+                }
+
+                if (result.status === 'error') {
+                    if (result.message && result.message.includes('Unauthorized')) {
+                        performLogout();
+                    }
+                    throw new Error(result.message);
+                }
+                
+                return result.data;
+            } catch (error) {
+                document.getElementById('loading-overlay').style.display = 'none';
+                throw error;
+            }
+        }
+
+        window.navTo = function(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            const targetView = document.getElementById(viewId);
+            if (targetView) targetView.classList.add('active');
+            
+            const firstInput = targetView ? targetView.querySelector('input:not([readonly])') : null;
+            if (firstInput) setTimeout(() => firstInput.focus(), 100);
+        };
+
+        window.togglePasswordVisibility = function(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (input) {
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    btn.innerText = 'Hide';
+                } else {
+                    input.type = 'password';
+                    btn.innerText = 'Show';
+                }
+            }
+        };
+
+        window.showDialog = function(title, message, isError = false) {
+            document.getElementById('dialog-title').innerText = title;
+            document.getElementById('dialog-message').innerText = message;
+            document.getElementById('dialog-icon').innerText = isError ? 'X' : 'i';
+            document.getElementById('modal-overlay').style.display = 'flex';
+            document.getElementById('dialog-btn-ok').focus();
+        };
+
+        window.closeDialog = function() {
+            document.getElementById('modal-overlay').style.display = 'none';
+        };
+
+        function showPromptDialog(title, message, callback) {
+            document.getElementById('prompt-dialog-title').innerText = title;
+            document.getElementById('prompt-dialog-message').innerText = message;
+            document.getElementById('prompt-dialog-input').value = '';
+            document.getElementById('prompt-modal-overlay').style.display = 'flex';
+            promptCallback = callback;
+            document.getElementById('prompt-dialog-input').focus();
+        }
+
+        window.closePromptDialog = function() {
+            document.getElementById('prompt-modal-overlay').style.display = 'none';
+            promptCallback = null;
+        };
+
+        document.getElementById('prompt-btn-confirm').addEventListener('click', () => {
+            const text = document.getElementById('prompt-dialog-input').value.trim();
+            if (promptCallback) promptCallback(text);
+            closePromptDialog();
+        });
+
+        // --- AUTHENTICATION & REGISTRATION HANDLERS ---
+
+        document.getElementById('form-signin').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const identifier = document.getElementById('si-identifier').value.trim();
+            const password = document.getElementById('si-password').value;
+            
+            try {
+                const res = await apiCall('signIn', { identifier, password });
+                pendingTempToken = res.tempToken;
+
+                if (res.requireSetupTotp) {
+                    showDialog('TOTP Registration Required', 'Two-Factor Authenticator registration is required before accessing the system.');
+                    initTotpSetup();
+                } else if (res.requireTotp) {
+                    document.getElementById('2fa-instructions').innerText = 'Credentials accepted. Enter the 6-digit access code from your Google Authenticator app.';
+                    navTo('view-signin-otp');
+                } else {
+                    handleRoleRouting(res);
+                }
+            } catch (err) {
+                showDialog('Access Denied', err.message, true);
+            }
+        });
+
+        async function initTotpSetup() {
+            try {
+                const res = await apiCall('setupTotp', { tempToken: pendingTempToken });
+                document.getElementById('totp-secret-key').innerText = res.secret_base32;
+                
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(res.uri)}`;
+                document.getElementById('totp-qr-image').src = qrUrl;
+                
+                navTo('view-totp-setup');
+            } catch(err) {
+                showDialog('TOTP Setup Error', err.message, true);
+            }
+        }
+
+        document.getElementById('form-totp-setup').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const code = document.getElementById('totp-setup-code').value.trim();
+            try {
+                const res = await apiCall('verifyTotpSetup', { tempToken: pendingTempToken, code: code });
+                showDialog('TOTP Enabled', 'Google Authenticator registration successful!');
+                handleRoleRouting(res);
+            } catch (err) {
+                showDialog('Setup Verification Failed', err.message, true);
+            }
+        });
+
+        document.getElementById('form-signin-otp').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const code = document.getElementById('si-otp').value.trim();
+            
+            try {
+                const res = await apiCall('verifyTotpLogin', { tempToken: pendingTempToken, code: code });
+                handleRoleRouting(res);
+            } catch (err) {
+                showDialog('2FA Verification Failed', err.message, true);
+            }
+        });
+
+        window.requestSignUpOtp = async function() {
+            const username = document.getElementById('su-username').value.trim();
+            const email = document.getElementById('su-email').value.trim();
+
+            if (!username || !email) {
+                return showDialog('Validation Error', 'Please enter both Username and E-mail before requesting OTP.', true);
+            }
+
+            try {
+                const res = await apiCall('requestSignUpOtp', { username, email });
+                showDialog('OTP Sent', res.message);
+            } catch (err) {
+                showDialog('OTP Error', err.message, true);
+            }
+        };
+
+        document.getElementById('form-signup').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('su-username').value.trim();
+            const displayName = document.getElementById('su-displayname').value.trim();
+            const email = document.getElementById('su-email').value.trim();
+            const otp = document.getElementById('su-otp').value.trim();
+            const requestedRole = document.getElementById('su-role').value;
+            const password = document.getElementById('su-password').value;
+            const confirmPassword = document.getElementById('su-confirm-password').value;
+
+            if (password !== confirmPassword) {
+                return showDialog('Validation Error', 'Passwords do not match.', true);
+            }
+
+            if (!otp) {
+                return showDialog('Validation Error', 'Please enter the 6-digit OTP code sent to your email.', true);
+            }
+
+            try {
+                const res = await apiCall('verifySignUpOtp', { 
+                    username, 
+                    displayName, 
+                    email, 
+                    otp, 
+                    password, 
+                    requestedRole 
+                });
+                showDialog('Registration Submitted', res.message);
+                document.getElementById('form-signup').reset();
+                navTo('view-check-status');
+            } catch (err) {
+                showDialog('Registration Failed', err.message, true);
+            }
+        });
+
+        window.performStatusCheck = async function() {
+            const identifier = document.getElementById('cs-identifier').value.trim();
+            if (!identifier) {
+                return showDialog('Validation Error', 'Please enter your username or email address.', true);
+            }
+
+            try {
+                const data = await apiCall('checkRegistrationStatus', { identifier });
+                const box = document.getElementById('cs-result-box');
+                
+                if (!data.found) {
+                    box.classList.add('hidden');
+                    return showDialog('Not Found', data.message, true);
+                }
+
+                document.getElementById('cs-res-username').innerText = data.username;
+                document.getElementById('cs-res-name').innerText = data.displayName || '-';
+                
+                const badge = document.getElementById('cs-res-badge');
+                badge.innerText = data.status.toUpperCase();
+                badge.className = '';
+                
+                const st = String(data.status).toLowerCase();
+                const reasonRow = document.getElementById('cs-res-reason-row');
+
+                if (st === 'active') {
+                    badge.classList.add('badge-active');
+                    reasonRow.classList.add('hidden');
+                } else if (st === 'rejected') {
+                    badge.classList.add('badge-rejected');
+                    reasonRow.classList.remove('hidden');
+                    document.getElementById('cs-res-reason').innerText = data.rejectionReason || 'No reason provided';
+                } else {
+                    badge.classList.add('badge-pending');
+                    reasonRow.classList.add('hidden');
+                }
+
+                document.getElementById('cs-res-date').innerText = data.createdAt ? new Date(data.createdAt).toLocaleString() : '-';
+                box.classList.remove('hidden');
+
+            } catch (err) {
+                showDialog('Status Check Error', err.message, true);
+            }
+        };
+
+        document.getElementById('form-forgot-password').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('fp-email').value.trim();
+            try {
+                const res = await apiCall('requestPasswordReset', { email });
+                showDialog('Reset Code Sent', res.message);
+                document.getElementById('rp-email').value = email;
+                navTo('view-reset-password');
+            } catch (err) {
+                showDialog('Request Error', err.message, true);
+            }
+        });
+
+        document.getElementById('form-reset-password').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('rp-email').value.trim();
+            const otp = document.getElementById('rp-otp').value.trim();
+            const newPassword = document.getElementById('rp-new-password').value;
+
+            try {
+                const res = await apiCall('resetPassword', { email, otp, newPassword });
+                showDialog('Password Reset Complete', res.message);
+                document.getElementById('form-reset-password').reset();
+                navTo('view-signin');
+            } catch (err) {
+                showDialog('Reset Error', err.message, true);
+            }
+        });
+
+        window.cancelSignIn = function() {
+            pendingTempToken = null;
+            navTo('view-home');
+        };
+
+        window.performLogout = function() {
+            if (currentSessionUser && currentSessionUser.sessionToken) {
+                apiCall('logout', { sessionToken: currentSessionUser.sessionToken }).catch(() => {});
+            }
+            currentSessionUser = null;
+            pendingTempToken = null;
+            sessionStorage.clear();
+            navTo('view-signin');
+        };
+
+        function handleRoleRouting(user) {
+            currentSessionUser = { 
+                userId: user.user_id || user.userId, 
+                role: user.role, 
+                display_name: user.display_name || user.username,
+                sessionToken: user.sessionToken
+            };
+
+            sessionStorage.setItem('sys_sessionToken', user.sessionToken);
+            sessionStorage.setItem('sys_user', JSON.stringify({ role: user.role, display_name: currentSessionUser.display_name }));
+            
+            if (user.role === 'System Developer') {
+                navTo('view-dashboard-dev');
+                document.getElementById('dev-user-label').innerText = `Logged in as: ${currentSessionUser.display_name}`;
+                loadDevDashboard();
+            } else if (user.role === 'Course Manager') {
+                navTo('view-dashboard-manager');
+                document.getElementById('mgr-user-label').innerText = `Logged in as: ${currentSessionUser.display_name}`;
+                loadManagerDashboard();
+            } else if (user.role === 'Teacher') {
+                navTo('view-dashboard-teacher');
+                document.getElementById('tch-user-label').innerText = `Logged in as: ${currentSessionUser.display_name}`;
+                loadTeacherAssignments();
+            } else {
+                showDialog("Role Error", "Unrecognized role assigned to user.", true);
+            }
+        }
+
+        // --- SYSTEM DEVELOPER DASHBOARD ---
+
+        window.switchDevTab = function(tabName) {
+            document.querySelectorAll('.pma-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('dev-tab-requests').classList.add('hidden');
+            document.getElementById('dev-tab-audit').classList.add('hidden');
+
+            if (tabName === 'requests') {
+                document.getElementById('tab-btn-requests').classList.add('active');
+                document.getElementById('dev-tab-requests').classList.remove('hidden');
+                loadDevPendingRequests();
+            } else {
+                document.getElementById('tab-btn-audit').classList.add('active');
+                document.getElementById('dev-tab-audit').classList.remove('hidden');
+            }
+        };
+
+        window.loadDevDashboard = async function() {
+            try {
+                const data = await apiCall('getDevDashboard');
+                document.getElementById('dev-stat-users').innerText = data.usersCount;
+                document.getElementById('dev-stat-pending').innerText = data.pendingRegistrationsCount || 0;
+                document.getElementById('dev-stat-courses').innerText = data.coursesCount;
+                rawAuditLogs = data.auditLogs || [];
+                renderDevAuditLogs(rawAuditLogs);
+                loadDevPendingRequests();
+            } catch (err) {
+                showDialog('Load Error', err.message, true);
+            }
+        };
+
+        window.loadDevPendingRequests = async function() {
+            try {
+                const res = await apiCall('getRegistrationRequests');
+                const tbody = document.querySelector('#dev-requests-table tbody');
+                tbody.innerHTML = '';
+
+                if (res.requests && res.requests.length > 0) {
+                    res.requests.forEach(req => {
+                        const tr = document.createElement('tr');
+                        const dateStr = req.createdAt ? new Date(req.createdAt).toLocaleString() : 'N/A';
+                        tr.innerHTML = `
+                            <td>${dateStr}</td>
+                            <td><b>${req.username}</b></td>
+                            <td>${req.displayName || req.username}</td>
+                            <td>${req.email}</td>
+                            <td><span class="badge-draft">${req.requestedRole}</span></td>
+                            <td class="space-x-1 whitespace-nowrap">
+                                <button class="win31-btn win31-btn-sm" onclick="approveUser('${req.userId}', '${req.requestedRole}')">Approve</button>
+                                <button class="win31-btn win31-btn-sm" onclick="promptRejectUser('${req.userId}', '${req.username}')">Reject...</button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center p-3">No pending registration requests.</td></tr>';
+                }
+            } catch (err) {
+                showDialog('Load Error', err.message, true);
+            }
+        };
+
+        window.approveUser = async function(userId, requestedRole) {
+            if (!confirm(`Are you sure you want to approve this user with role: ${requestedRole}?`)) return;
+
+            try {
+                const res = await apiCall('approveRegistration', { targetUserId: userId, assignedRole: requestedRole });
+                showDialog('Success', res.message);
+                loadDevDashboard();
+            } catch (err) {
+                showDialog('Approval Error', err.message, true);
+            }
+        };
+
+        window.promptRejectUser = function(userId, username) {
+            showPromptDialog(
+                `Reject Registration (${username})`, 
+                `Please specify the reason for rejecting ${username}:`, 
+                async (reason) => {
+                    if (!reason) {
+                        return showDialog('Validation', 'A rejection reason is required.', true);
+                    }
+                    try {
+                        const res = await apiCall('rejectRegistration', { targetUserId: userId, reason: reason });
+                        showDialog('Rejected', res.message);
+                        loadDevDashboard();
+                    } catch (err) {
+                        showDialog('Error', err.message, true);
+                    }
+                }
+            );
+        };
+
+        function renderDevAuditLogs(logs) {
+            const tbody = document.querySelector('#dev-audit-table tbody');
+            tbody.innerHTML = '';
+            
+            if (logs && logs.length > 0) {
+                logs.forEach(log => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${log.timestamp || ''}</td>
+                        <td>${log.actor_user_id || ''}</td>
+                        <td>${log.actor_role || ''}</td>
+                        <td>${log.action || ''}</td>
+                        <td>${log.reason || log.new_value_json || ''}</td>
+                        <td><span class="font-bold">${log.outcome || ''}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center p-2">No audit log entries found.</td></tr>';
+            }
+        }
+
+        function filterDevAuditLogs() {
+            const query = document.getElementById('dev-audit-search').value.toLowerCase().trim();
+            if (!query) {
+                renderDevAuditLogs(rawAuditLogs);
+                return;
+            }
+            const filtered = rawAuditLogs.filter(l => 
+                (l.action && l.action.toLowerCase().includes(query)) ||
+                (l.actor_user_id && l.actor_user_id.toLowerCase().includes(query)) ||
+                (l.actor_role && l.actor_role.toLowerCase().includes(query))
+            );
+            renderDevAuditLogs(filtered);
+        }
+
+        // --- COURSE MANAGER DASHBOARD ---
+
+        async function loadManagerDashboard() {
+            try {
+                const data = await apiCall('getManagerDashboard');
+                document.getElementById('mgr-stat-offerings').innerText = data.offeringsCount;
+                document.getElementById('mgr-stat-enrollments').innerText = data.enrollmentsCount;
+            } catch (err) {
+                showDialog('Load Error', err.message, true);
+            }
+        }
+
+        // --- TEACHER DASHBOARD ---
+
+        async function loadTeacherAssignments() {
+            try {
+                const assignments = await apiCall('getTeacherAssignments');
+                const select = document.getElementById('tch-assignment-select');
+                select.innerHTML = '<option value="">-- Select Assessment --</option>';
+                
+                if (assignments && assignments.length > 0) {
+                    assignments.forEach(assm => {
+                        const opt = document.createElement('option');
+                        opt.value = assm.assessment_id;
+                        opt.innerText = `${assm.course_code || 'Course'} - ${assm.assessment_name} (Max: ${assm.max_score})`;
+                        select.appendChild(opt);
+                    });
+                }
+            } catch (err) {
+                showDialog('Load Error', err.message, true);
+            }
+        }
+
+        window.loadTeacherStudents = async function() {
+            const assmId = document.getElementById('tch-assignment-select').value;
+            const tbody = document.querySelector('#tch-grading-table tbody');
+            
+            if (!assmId) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Select an assessment above.</td></tr>';
+                updateTeacherMetrics(0, 0, 0, 0);
+                return;
+            }
+
+            try {
+                const data = await apiCall('getTeacherDashboard', { assessmentId: assmId });
+                const maxScore = data.assessment.max_score;
+                document.getElementById('tch-max-score').innerText = maxScore;
+                document.getElementById('tch-max-score-header').innerText = maxScore;
+                
+                tbody.innerHTML = '';
+                if (data.students && data.students.length > 0) {
+                    data.students.forEach(stu => {
+                        const tr = document.createElement('tr');
+                        const statusBadge = stu.status === 'Submitted' 
+                            ? '<span class="badge-submitted">Submitted</span>' 
+                            : '<span class="badge-draft">Draft</span>';
+
+                        tr.innerHTML = `
+                            <td>${stu.student_code}</td>
+                            <td>${stu.name}</td>
+                            <td class="score-input-cell">
+                                <input type="number" class="score-input" min="0" max="${maxScore}" step="0.5" data-student="${stu.student_id}" value="${stu.score}" oninput="validateScoreInput(this, ${maxScore})">
+                            </td>
+                            <td>${statusBadge}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                    recalculateTeacherMetrics();
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4">No enrolled students found for this class.</td></tr>';
+                    updateTeacherMetrics(0, 0, 0, maxScore);
+                }
+            } catch (err) {
+                showDialog('Load Error', err.message, true);
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-red-600">Error loading student data.</td></tr>';
+            }
+        };
+
+        window.validateScoreInput = function(input, maxScore) {
+            const val = parseFloat(input.value);
+            if (input.value !== '' && (isNaN(val) || val < 0 || val > maxScore)) {
+                input.classList.add('score-invalid');
+            } else {
+                input.classList.remove('score-invalid');
+            }
+            recalculateTeacherMetrics();
+        };
+
+        function recalculateTeacherMetrics() {
+            const inputs = document.querySelectorAll('.score-input');
+            const maxScore = parseFloat(document.getElementById('tch-max-score').innerText) || 0;
+            let totalEnrolled = inputs.length;
+            let gradedCount = 0;
+            let sumScore = 0;
+
+            inputs.forEach(inp => {
+                const val = parseFloat(inp.value);
+                if (inp.value !== '' && !isNaN(val) && val >= 0 && val <= maxScore) {
+                    gradedCount++;
+                    sumScore += val;
+                }
+            });
+
+            const avg = gradedCount > 0 ? (sumScore / gradedCount).toFixed(1) : '0.0';
+            updateTeacherMetrics(totalEnrolled, gradedCount, avg, maxScore);
+        }
+
+        function updateTeacherMetrics(enrolled, graded, avg, max) {
+            document.getElementById('tch-stat-enrolled').innerText = enrolled;
+            document.getElementById('tch-stat-graded').innerText = graded;
+            document.getElementById('tch-stat-avg').innerText = avg;
+            document.getElementById('tch-max-score').innerText = max;
+        }
+
+        window.submitScores = async function(statusText) {
+            const select = document.getElementById('tch-assignment-select');
+            const assmId = select.value;
+            if (!assmId) return showDialog("Error", "Please select an assessment item first.", true);
+            
+            const maxScore = parseFloat(document.getElementById('tch-max-score').innerText);
+            const inputs = document.querySelectorAll('.score-input');
+            const updates = [];
+
+            try {
+                inputs.forEach(input => {
+                    const val = input.value.trim();
+                    if (val !== '') {
+                        const scoreNum = parseFloat(val);
+                        if (isNaN(scoreNum) || scoreNum < 0 || scoreNum > maxScore) {
+                            throw new Error(`Invalid score detected. Must be a numeric value between 0 and ${maxScore}.`);
+                        }
+                        updates.push({ studentId: input.dataset.student, score: scoreNum });
+                    }
+                });
+
+                if (updates.length === 0) {
+                    throw new Error("No student scores have been entered to save.");
+                }
+
+                if (statusText === 'Submitted' && updates.length < inputs.length) {
+                    throw new Error("Cannot submit formally. All enrolled students must have scores assigned before formal submission.");
+                }
+
+                const res = await apiCall('saveScores', { 
+                    assessmentId: assmId, 
+                    updates: updates, 
+                    status: statusText 
+                });
+                
+                showDialog("Scores Saved", res.message);
+                loadTeacherStudents();
+                
+            } catch (err) {
+                showDialog("Validation Error", err.message, true);
+            }
+        };
+    </script>
+</body>
+</html>
