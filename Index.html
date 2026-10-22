@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Academic Assessment System - Windows 3.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- โหลดการตั้งค่า URL ศูนย์กลางจาก config.js -->
+    <script src="config.js?v=2.6.0"></script>
+    
     <style>
         * {
             font-family: 'Times New Roman', Times, serif !important;
@@ -295,9 +299,10 @@
                     <div>
                         <p class="underline mb-1 font-bold">API Endpoint Configuration:</p>
                         <div class="flex gap-2 items-center">
-                            <input type="text" id="cfg-api-url" class="win31-input text-xs" placeholder="Paste Google Apps Script Web App URL here..." value="https://script.google.com/macros/s/AKfycbwLe0wG7rA4tadpNXmrQ80CW7NXDTEpa6T_j0vrkNgFlA2TM9phA2yvBpU45ErSbw8K7Q/exec">
+                            <input type="text" id="cfg-api-url" class="win31-input text-xs" placeholder="Configured via config.js...">
                             <button class="win31-btn text-xs whitespace-nowrap" onclick="saveAndTestApiUrl()">Save & Ping</button>
                         </div>
+                        <p class="text-[11px] text-gray-700 mt-1">* Main API URL is centrally loaded from config.js</p>
                     </div>
                     <div>
                         <p class="underline mb-1 font-bold">System Security Notice:</p>
@@ -697,7 +702,10 @@
 
     <!-- SCRIPT CLIENT LOGIC -->
     <script type="module">
-        let API_URL = "https://script.google.com/macros/s/AKfycbwLe0wG7rA4tadpNXmrQ80CW7NXDTEpa6T_j0vrkNgFlA2TM9phA2yvBpU45ErSbw8K7Q/exec";
+        // ดึง URL อัตโนมัติจาก config.js (หากไม่มีจะใช้ค่าว่าง)
+        let API_URL = (window.APP_CONFIG && typeof window.APP_CONFIG.getApiUrl === 'function') 
+            ? window.APP_CONFIG.getApiUrl() 
+            : "";
 
         let currentSessionUser = null;
         let pendingTempToken = null;
@@ -742,7 +750,12 @@
 
         window.saveAndTestApiUrl = function() {
             const inputVal = document.getElementById('cfg-api-url').value.trim();
-            API_URL = inputVal;
+            if (window.APP_CONFIG && typeof window.APP_CONFIG.setLocalOverride === 'function') {
+                window.APP_CONFIG.setLocalOverride(inputVal);
+                API_URL = window.APP_CONFIG.getApiUrl();
+            } else {
+                API_URL = inputVal;
+            }
             updateApiBanner();
             testApiConnection();
         };
@@ -820,7 +833,7 @@
 
         async function apiCall(action, payload = {}) {
             if (!API_URL) {
-                throw new Error("โปรดใส่ Web App URL ของ Google Apps Script ในตัวแปร API_URL");
+                throw new Error("โปรดใส่ Web App URL ของ Google Apps Script ในไฟล์ config.js");
             }
 
             document.getElementById('loading-overlay').style.display = 'flex';
